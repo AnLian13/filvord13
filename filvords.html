@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+       root {
+ --bg-color: #666;
+}
+html { 
+ min-height: 100vh;
+ display: grid;
+ place-items: center;
+ text-align: center;
+ font-family: sans-serif;
+ background:
+ radial-gradient(transparent, black 65%),
+ var(--bg-color);
+ box-shadow: inset 0 0 25vmin black;
+ user-select: none;
+ overflow: hidden;
+ color: white;
+ transition: .75s;
+}
+body {
+ margin: 0;
+}
+
+p {
+ text-align: left;
+ font-size: 12px;
+}
+button {
+ float: right;
+ margin-top: -40px;
+ border-radius: 1rem;
+ border: 0;
+ background: white;
+ padding: .5rem 1rem;
+ color: gray;
+ transition: .5s;
+ font-size: 12px;
+}
+button:hover {
+ color: black;
+ box-shadow: 0 3px 3px rgba(0,0,0,.25);
+}
+
+#crossword_board {
+ width: 100vw;
+ max-width: 480px;
+ height: 100vw;
+ max-height: 480px;
+ outline: 1px solid lightgray;
+ border-radius: .5rem;
+ box-shadow: 0 5px rgba(0,0,0,.25);
+ background-color: white;
+ position: relative;
+ color: black;
+}
+#crossword_board:after {
+ content: '\1F44D';
+ width: 250px;
+ height: 250px;
+ position: absolute;
+ left: 50%;
+ top: 50%;
+ transform: translate(-50%,-50%);
+ pointer-events: none;
+ background: rgba(255,255,255,.5);
+ -webkit-backdrop-filter: blur(3px);
+ backdrop-filter: blur(3px);
+ border-radius: 50%;
+ box-shadow: 0 10px 15px rgba(0,0,0,.5);
+ line-height: 230px;
+ font-size: 125px; 
+ opacity: 0;
+}
+
+.game_winner:after {
+ animation: winner 1s linear forwards;
+}
+@keyframes winner {
+ 0% { transform: translate(-50%,0%); opacity:0; }
+ 50% { transform: translate(-50%,-25%); opacity:.25; }
+ 100% { transform: translate(-50%,-50%); opacity:1; }
+}
+
+#crossword_board .block {
+ width: min(48px, calc(100vw / 10));
+ height: min(48px, calc(100vw / 10)); 
+ line-height: min(48px, calc(100vw / 10)); 
+ /* outline: 1px dotted red; */
+ float: left;
+ user-select: none;
+ text-transform: uppercase;
+}
+
+.letter {
+ user-select: none;
+ /* background: #efefef; */
+}
+
+.listed_word {
+ padding: .25rem .5rem;
+ text-transform: uppercase;
+ display: inline-block;
+}
+
+.first_letter {
+ border-radius: 25px 0 0 25px;
+}
+.last_letter {
+ border-radius: 0 25px 25px 0;
+}
+
+.letter_pop {
+ animation: pop .5s linear forwards;
+/* box-shadow:
+ inset 0 2px firebrick,
+ inset 0 -2px firebrick; */
+ background-color: firebrick;
+ color: white;
+/* text-shadow: 2px 2px 3px black; */
+ box-shadow:
+ inset 0 3px rgba(0,0,0,.25),
+ 0 3px rgba(0,0,0,.25);
+}
+@keyframes pop {
+ 50% { transform: scale(1.2); }
+}
+
+
+@keyframes pop_bottom {
+ 100% { transform: translate(100%, -350%) scale(.25); opacity: 0; }
+}
+
+/* .first_letter.letter_pop {
+ box-shadow:
+ inset 0 2px firebrick,
+ inset 0 -2px firebrick,
+ inset 2px 0 firebrick;
+}
+.last_letter.letter_pop {
+ box-shadow:
+ inset 0 2px firebrick,
+ inset 0 -2px firebrick,
+ inset -2px 0 firebrick;
+} */
+
+.found_word {
+ animation: pop .5s linear forwards;
+ color: rgba(255,255,255,.15);
+ text-decoration: line-through 2px;
+} 
+    </style>
+</head>
+<body>
+    <p>Click/Drag the letters to form words below</p>
+<button onclick='setGameUp()'>New Puzzle</button>
+<div id='crossword_board'></div><br>
+</body>
+<script>
+    var blocks = 100
+const cb = document.querySelector('#crossword_board')
+var md = false
+var num_words = 5
+
+function addBlocks() {
+ for(var i=0;i<blocks;i++){
+ var b = document.createElement('div')
+ b.className = 'block'
+ cb.appendChild(b)
+ }
+}
+
+function addWords(){ 
+ var words = ['Данте','Габриэль','Феликс','Вару','Зонтик','Ромео','Пик','Куромаку','Фёдор'] 
+ // max word length of 10
+ words.sort(() => Math.random() - 0.5);
+ words = words.slice(0,num_words)
+
+ var arr = [];
+ while(arr.length < 5){
+ var r = Math.floor(Math.random() * 10);
+ if(arr.indexOf(r) === -1) arr.push(r);
+ }
+
+ words.forEach(function(elm){
+ var word_length = elm.length
+ var offset = Math.floor(Math.random()*(11-word_length))
+ var w_start = offset + (arr[0] * 10)
+ arr.shift() 
+ elm.split('').forEach(function(e){
+ var b = document.querySelectorAll('.block')[w_start]
+ b.innerHTML = e
+ b.classList.add('letter')
+ b.classList.add(elm)
+ b.onmousedown = function() {
+ this.classList.add('letter_pop')
+ this.style.background = this.classList[2]
+ if(document.querySelectorAll('.'+elm+'.letter_pop').length == elm.length) {
+ document.querySelectorAll('.listed_word').forEach(function(e){
+ if(e.innerHTML == elm) {
+ e.classList.add('found_word')
+ document.documentElement.style.setProperty('--bg-color', e.innerHTML)
+ }
+ })
+ }
+ setTimeout(you_win, 500)
+ }
+ b.onmouseenter = function() {
+ if(md) {
+ this.classList.add('letter_pop')
+ this.style.background = this.classList[2]
+ if(document.querySelectorAll('.'+elm+'.letter_pop').length == elm.length) {
+ document.querySelectorAll('.listed_word').forEach(function(e){
+ if(e.innerHTML == elm) {
+ e.classList.add('found_word')
+ document.documentElement.style.setProperty('--bg-color', e.innerHTML)
+ }
+ })
+ }
+ setTimeout(you_win, 500)
+ } 
+ }
+
+ if(elm.split('').indexOf(e) == 0 
+ && (b.previousSibling
+ && !b.previousSibling.classList.contains(elm)) 
+ || !b.previousSibling) {
+ b.classList.add('first_letter')
+ }
+ if(elm.split('').indexOf(e) == elm.split('').length - 1) {
+ b.classList.add('last_letter')
+ } 
+ w_start++
+ })
+ var w = document.createElement('div')
+ w.className = 'listed_word'
+ w.innerHTML = elm
+ document.body.appendChild(w)
+ }) 
+}
+
+function you_win() {
+ if(document.querySelectorAll('.found_word').length == num_words) {
+ md = false
+ cb.removeEventListener('mousedown', mouse_down)
+ cb.removeEventListener('mouseup', mouse_down)
+
+ cb.classList.add('game_winner')
+ }
+}
+
+const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
+function fillInEmpty() {
+ var b = document.querySelectorAll('.block')
+ b.forEach(function(elm){
+ if(elm.innerHTML == '') {
+ var letter = alphabet.split('')[Math.floor(Math.random()*alphabet.length)]
+ elm.innerHTML = letter
+ }
+ })
+}
+
+addBlocks()
+addWords()
+fillInEmpty() 
+
+function mouse_down(event) {
+ if(!md) {
+ md = true
+ } else {
+ md = false
+ }
+
+ if(event.type == 'touchmove') {
+ var block = document.elementFromPoint(event.touches[event.touches.length - 1].clientX, event.touches[event.touches.length - 1].clientY)
+ if(block.classList.contains('letter')) {
+ block.style.background = block.classList[2]
+ block.classList.add('letter_pop') 
+ }
+ var elm = block.classList[2]
+ if(document.querySelectorAll('.'+elm+'.letter_pop').length == elm.length) {
+ document.querySelectorAll('.listed_word').forEach(function(e){
+ if(e.innerHTML == elm) {
+ e.classList.add('found_word')
+ document.documentElement.style.setProperty('--bg-color', e.innerHTML)
+ }
+ })
+ }
+ setTimeout(you_win, 500)
+ }
+}
+
+function setGameUp() {
+ cb.innerHTML = ''
+ cb.className = ''
+ document.documentElement.style.setProperty('--bg-color', '#666')
+ document.querySelectorAll('.listed_word').forEach(function(e){
+ e.remove()
+ })
+
+ addBlocks()
+ addWords()
+ fillInEmpty() 
+
+ cb.addEventListener('mousedown', mouse_down)
+ cb.addEventListener('mouseup', mouse_down)
+ cb.addEventListener('touchmove', mouse_down)
+}
+
+setGameUp()
+</script>
+</html>
